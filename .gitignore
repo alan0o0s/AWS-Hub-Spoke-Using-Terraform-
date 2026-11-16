@@ -1,10 +1,20 @@
-# Terraform
+# Terraform provider cache and local CLI config
 .terraform/
-.terraform.tfstate.lock.hcl
+.terraformrc
+terraform.rc
+
+# Terraform state, lock files, and plans
 *.tfstate
 *.tfstate.*
-terraform.tfvars
-*.auto.tfvars
+.terraform.tfstate.lock.hcl
+.terraform.tfstate.lock.info
+*tfplan*
+
+# Local variables can contain credentials or environment-specific values
+*.tfvars
+*.tfvars.json
+
+# Terraform crash logs and local overrides
 crash.log
 crash.*.log
 override.tf
@@ -12,10 +22,10 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Lambda build artifacts
+# Generated Lambda archives
 modules/alb-ip-target-sync/lambda/*.zip
 
-# OS / editor
+# OS and editor files
 .DS_Store
 *.swp
 .idea/
