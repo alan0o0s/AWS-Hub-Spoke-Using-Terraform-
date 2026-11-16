@@ -1,0 +1,69 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# Amazon SSM Agent bootstrap - idempotent, safe to run on every boot, and
+# safe on every distribution this module might launch.
+#
+# The default AMI for this module (Amazon Linux 2023) already ships with
+# the SSM Agent pre-installed AND enabled, so on the default path this
+# block is a no-op verification: it confirms the service is enabled and
+# running and does nothing further. If var.ami_id is overridden with a
+# distribution that does NOT bundle the agent (e.g. a bare Ubuntu AMI),
+# this block installs it using the correct method for that distribution
+# before enabling and starting it. Nothing here reinstalls, reconfigures,
+# or restarts an agent that is already installed and running.
+# ---------------------------------------------------------------------------
+set -uo pipefail
+
+REGION="${region}"
+LOG_TAG="ssm-bootstrap"
+
+log() {
+  logger -t "$${LOG_TAG}" "$1" 2>/dev/null || echo "[$${LOG_TAG}] $1"
+}
+
+agent_unit_exists() {
+  systemctl list-unit-files 2>/dev/null | grep -q '^amazon-ssm-agent\.service'
+}
+
+agent_snap_exists() {
+  command -v snap >/dev/null 2>&1 && snap list amazon-ssm-agent >/dev/null 2>&1
+}
+
+agent_active() {
+  systemctl is-active --quiet amazon-ssm-agent 2>/dev/null
+}
+
+if agent_unit_exists || agent_snap_exists; then
+  log "amazon-ssm-agent already installed - skipping install step"
+else
+  log "amazon-ssm-agent not found - installing for this distribution"
+  if command -v dnf >/dev/null 2>&1; then
+    dnf install -y amazon-ssm-agent
+  elif command -v yum >/dev/null 2>&1; then
+    yum install -y amazon-ssm-agent \
+      || yum install -y "https://s3.$${REGION}.amazonaws.com/amazon-ssm-$${REGION}/latest/linux_amd64/amazon-ssm-agent.rpm"
+  elif command -v apt-get >/dev/null 2>&1; then
+    ARCH="$(dpkg --print-architecture)"
+    TMP_DEB="/tmp/amazon-ssm-agent.deb"
+    curl -fsSL "https://s3.$${REGION}.amazonaws.com/amazon-ssm-$${REGION}/latest/debian_$${ARCH}/amazon-ssm-agent.deb" -o "$${TMP_DEB}" \
+      && (dpkg -i "$${TMP_DEB}" || apt-get install -y -f) \
+      && rm -f "$${TMP_DEB}"
+  elif command -v snap >/dev/null 2>&1; then
+    snap install amazon-ssm-agent --classic
+  else
+    log "no supported package manager (dnf/yum/apt/snap) found - cannot install SSM Agent"
+  fi
+fi
+
+if agent_snap_exists; then
+  snap start amazon-ssm-agent >/dev/null 2>&1 || log "failed to start snap amazon-ssm-agent"
+elif command -v systemctl >/dev/null 2>&1; then
+  systemctl enable amazon-ssm-agent >/dev/null 2>&1 || log "failed to enable amazon-ssm-agent"
+  if agent_active; then
+    log "amazon-ssm-agent already running"
+  else
+    systemctl start amazon-ssm-agent || log "failed to start amazon-ssm-agent"
+  fi
+else
+  log "systemctl not available - cannot enable/start amazon-ssm-agent"
+fi

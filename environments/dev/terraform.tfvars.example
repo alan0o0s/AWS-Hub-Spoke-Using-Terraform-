@@ -1,0 +1,4 @@
+# Copy to terraform.tfvars. Administrative access is via SSM Session
+# Manager by default - no admin_cidr / Bastion needed. key_name is optional,
+# only needed if you also want an SSH fallback.
+# key_name = "my-ec2-keypair"

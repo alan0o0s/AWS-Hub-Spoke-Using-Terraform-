@@ -1,0 +1,22 @@
+# Terraform
+.terraform/
+.terraform.tfstate.lock.hcl
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.auto.tfvars
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lambda build artifacts
+modules/alb-ip-target-sync/lambda/*.zip
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/

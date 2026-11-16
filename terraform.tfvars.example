@@ -1,0 +1,32 @@
+# ---------------------------------------------------------------------------
+# This file documents every root-module variable in one place. In practice,
+# you deploy via environments/<env>/ (which calls this root module with
+# environment-appropriate values) - see README.md "Deployment". This file
+# is provided for reference and for anyone extending the root module
+# directly.
+# ---------------------------------------------------------------------------
+
+aws_region   = "us-east-2"
+environment  = "dev"
+project_name = "aws-hub-spoke"
+owner        = "Platform-Team"
+cost_center  = "eng-platform"
+
+availability_zones = ["us-east-2a", "us-east-2b"]
+hub_vpc_cidr       = "10.0.0.0/16"
+spoke_vpc_cidr     = "10.1.0.0/16"
+
+# Never 0.0.0.0/0 outside an explicit, documented lab override.
+admin_cidr = "203.0.113.10/32"
+
+key_name = "hup"
+
+instance_type    = "t2.micro"
+asg_min_size     = 2
+asg_desired_size = 2
+asg_max_size     = 4
+
+enable_flow_logs                  = true
+enable_monitoring                 = true
+enable_firewall_delete_protection = true
+log_retention_days                = 30

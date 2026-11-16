@@ -1,0 +1,44 @@
+name: Terraform Plan
+
+# Runs a real plan against AWS using OIDC federation - no long-lived AWS
+# access keys are stored in GitHub Secrets. Configure the IAM role trust
+# policy per README.md "CI/CD - OIDC Setup" before enabling this workflow.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  id-token: write   # required for OIDC
+  contents: read
+  pull-requests: write
+
+jobs:
+  plan:
+    name: plan (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev]  # staging/prod plans typically gated to manual dispatch - see README
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_PLAN_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: terraform init
+        working-directory: environments/${{ matrix.environment }}
+        run: terraform init
+
+      - name: terraform plan
+        working-directory: environments/${{ matrix.environment }}
+        run: terraform plan -no-color -input=false
+        env:
+          TF_VAR_admin_cidr: ${{ secrets.ADMIN_CIDR }}
+          TF_VAR_key_name: ${{ secrets.EC2_KEY_NAME }}

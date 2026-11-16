@@ -1,0 +1,33 @@
+name: Terraform Security Scan
+
+on:
+  pull_request:
+    paths:
+      - "**.tf"
+  push:
+    branches: [main]
+    paths:
+      - "**.tf"
+
+jobs:
+  security-scan:
+    name: tflint + checkov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Run TFLint
+        run: |
+          tflint --init
+          tflint --recursive
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: .
+          framework: terraform
+          quiet: true
+          soft_fail: false
